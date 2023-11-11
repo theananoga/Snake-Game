@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cabin+Sketch&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.0/css/all.css">
+    <meta charset="utf-8" />
+    <title>Snake Game</title>
+    <style>
+        body {
+            width: 100vw;
+            height: 100vh;
+            background-color: #726E6D;
+            justify-content: center;
+            display: flex;
+            margin: 0;
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            color: #16F529;
+        }
+
+        #boardGame {
+            position: relative;
+            width: 70vmin;
+            height: 70vmin;
+            border: 3px solid black;
+            background-color: #FDFD96;
+            display: grid;
+            grid-template-rows: repeat(21,1fr);
+            grid-template-columns: repeat(21,1fr);
+        }
+
+        #scoreDisplay {
+            width: 70vmin;
+            height: 5vmin;
+            border: 3px solid black;
+            background-color: #79BAEC;
+            font-size: 30px;
+            font-family: 'Cabin Sketch', cursive;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .sHead {
+            background-color: #41A317;
+            border-radius: 40%;
+        }
+
+        .sBody {
+            background-color: #52D017;
+            border-radius: 100%;
+        }
+
+        .food::before {
+            font-family: "Font Awesome 5 Free";
+            content: '\f5d1';
+            font-weight: 900;
+            color: red;
+            font-size: 20px;
+        }
+
+        .poison:before {
+            font-family: "Font Awesome 5 Free";
+            content: '\f72f';
+            font-weight: 900;
+            color: forestgreen;
+            font-size: 20px;
+        }
+
+        .bomb:before {
+            font-family: "Font Awesome 5 Free";
+            content: '\f1e2';
+            font-weight: 900;
+            font-size: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <center>
+        <h1>Snake Game</h1>
+        <div id=scoreDisplay>Score : 0</div>
+        <div id="boardGame"></div>
+    </center>
+
+    <script>
+        let direction = { x: 0, y: 0 };
+        let lastRenderTime = 0;
+        let speed = 2;
+        let score = 0;
+        let idleTime = 0;
+        let snakeBody = [{ x: 11, y: 11 }];
+        let food = { x: 15, y: 16 };
+        let poison = { x: 15, y: 13 };
+        let bomb = { x: 7, y: 10 };
+
+        //game description
+        window.alert('SNAKE GAME\nREAD!!\nHow To Play:\n1. Arrow Up to go upward\n2. Arrow Down to downward\n3. Arrow Left to left\n4. Arrow Right to right\n\nApple : Food (score +1)\nBottle : Poison (score -1)\nBomb : Bomb (Game Over)\nHit The Wall or Snake itself : Game Over\n\nClick OK to play the game');
+
+        //run time
+        function main(currentTime) {
+            window.requestAnimationFrame(main);
+            // console.log(currentTime);
+            if (((currentTime - lastRenderTime) / 1000) < 1 / speed) {
+                return;
+            }
+            lastRenderTime = currentTime;
+            updateGame(); //call function
+            displayObject(); //call funtion
+        }
+
+        function updateGame() {
+            //move the snake
+            for (let i = snakeBody.length - 2; i >= 0; i--) {
+                snakeBody[i + 1] = { ...snakeBody[i] }; //move the body
+            }
+
+            //move the head
+            snakeBody[0].x = snakeBody[0].x + direction.x;
+            snakeBody[0].y = snakeBody[0].y + direction.y;
+
+            idleTime++; //count idle time
+
+            //bump to objects or eat bomb
+            if (death(snakeBody)) { //call death function, if return true game over
+                direction = { x: 0, y: 0 };
+                window.alert('Your Score : ' + score + '\nGame Over! Click OK to restart the game');
+                score = 0;
+                scoreDisplay = document.getElementById('scoreDisplay');
+                scoreDisplay.innerHTML = "Score : " + score;
+                //restart the game
+                snakeBody = [{ x: 11, y: 11 }];
+                food = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                poison = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                bomb = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                score = 0;
+                speed = 2;
+                idleTime = 0; //reset idle time
+            }
+
+            //eat food
+            else if (snakeBody[0].x === food.x && snakeBody[0].y === food.y) {
+                score++; //increase score
+                speed++; //increase speed
+                scoreDisplay = document.getElementById('scoreDisplay');
+                scoreDisplay.innerHTML = "Score : " + score;
+                snakeBody.unshift({ x: snakeBody[0].x + direction.x, y: snakeBody[0].y + direction.y }); //add one snake body
+                //random the position
+                food = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                poison = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                bomb = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                idleTime = 0; //reset idle time
+            }
+
+            //eat poison
+            else if (snakeBody[0].x === poison.x && snakeBody[0].y === poison.y) {
+                score--; //decrease score
+                scoreDisplay = document.getElementById('scoreDisplay');
+                scoreDisplay.innerHTML = "Score : " + score;
+                //random the position
+                food = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                poison = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                bomb = { x: Math.floor(Math.random() * 21) + 1, y: Math.floor(Math.random() * 21) + 1 };
+                idleTime = 0; //reset idle time
+            }
+
+            //if no eat food,poison for several seconds
+            else if (idleTime > 50) {
+                if (snakeBody.length > 1) { //if snake have body
+                    snakeBody.shift({ x: snakeBody[0].x + direction.x, y: snakeBody[0].y + direction.y }); //remove one snake body
+                }
+                idleTime = 0; //reset idle time
+            }
+        }
+
+        //bump to snake body or wall, eat bomb or score
+        function death(snake) {
+            //if bump to snake body
+            for (let i = 1; i < snake.length; i++) {
+                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
+                    return true;
+                }
+            }
+            //if bump to wall
+            if (snake[0].x >= 22 || snake[0].x <= 0 || snake[0].y >= 22 || snake[0].y <= 0) {
+                return true;
+            }
+            //if eat bomb
+            if (snakeBody[0].x === bomb.x && snakeBody[0].y === bomb.y) {
+                return true;
+            }
+            //if the score minus
+            if (score < 0) {
+                return true;
+            }
+            return false;
+        }
+
+
+        //display objects
+        function displayObject() {
+            board = document.getElementById('boardGame');
+            board.innerHTML = ""; //clearing the previous displayed position
+            //display snake
+            snakeBody.forEach((segment, index) => {
+                snakeElement = document.createElement('div');
+                snakeElement.style.gridRowStart = segment.y;
+                snakeElement.style.gridColumnStart = segment.x;
+                if (index === 0) {
+                    snakeElement.classList.add('sHead');
+                } else {
+                    snakeElement.classList.add('sBody');
+                }
+                board.appendChild(snakeElement);
+            });
+
+            //display food
+            foodElement = document.createElement('div');
+            foodElement.style.gridRowStart = food.y;
+            foodElement.style.gridColumnStart = food.x;
+            foodElement.classList.add('food');
+            board.appendChild(foodElement);
+
+            //display poison
+            poisonElement = document.createElement('div');
+            poisonElement.style.gridRowStart = poison.y;
+            poisonElement.style.gridColumnStart = poison.x;
+            poisonElement.classList.add('poison');
+            board.appendChild(poisonElement);
+
+            //display bomb
+            bombElement = document.createElement('div');
+            bombElement.style.gridRowStart = bomb.y;
+            bombElement.style.gridColumnStart = bomb.x;
+            bombElement.classList.add('bomb');
+            board.appendChild(bombElement);
+
+        }
+
+        //main logic
+        window.requestAnimationFrame(main);
+        window.addEventListener('keydown', event => { //for press the key
+            direction = { x: 0, y: 1 }; //start game
+            //input the direction of the snake
+            switch (event.key) {
+                case "ArrowUp":
+                    direction.x = 0;
+                    direction.y = -1;
+                    break;
+                case "ArrowDown":
+                    direction.x = 0;
+                    direction.y = 1;
+                    break;
+                case "ArrowLeft":
+                    direction.x = -1;
+                    direction.y = 0;
+                    break;
+                case "ArrowRight":
+                    direction.x = 1;
+                    direction.y = 0;
+                    break;
+                default:
+                    break;
+            }
+        });
+
+
+    </script>
+
+
+</body>
+</html>
